@@ -67,4 +67,55 @@ theorem ne_zero_and_sub_one_eq_zero_iff_isPowerOfTwo {n : Nat} :
 instance {n : Nat} : Decidable n.isPowerOfTwo :=
   decidable_of_iff _ ne_zero_and_sub_one_eq_zero_iff_isPowerOfTwo
 
+theorem le_nextPowerOfTwo (n : Nat) : n ≤ n.nextPowerOfTwo :=
+  le_go 1 (by decide)
+where
+  le_go (power : Nat) (h : power > 0) : n ≤ nextPowerOfTwo.go n power h := by
+    unfold nextPowerOfTwo.go
+    split
+    · exact le_go (power * 2) (Nat.mul_pos h (by decide))
+    · omega
+  termination_by n - power
+  decreasing_by simp_wf; apply nextPowerOfTwo_dec <;> assumption
+
+theorem nextPowerOfTwo_le {n m : Nat} (hm : m.isPowerOfTwo) (hn : n ≤ m) :
+    n.nextPowerOfTwo ≤ m :=
+  go_le 1 (by decide) isPowerOfTwo_one (pos_of_isPowerOfTwo hm) hm hn
+where
+  go_le (power : Nat) (h₁ : power > 0) (h₂ : power.isPowerOfTwo) (hpm : power ≤ m)
+      (hm : m.isPowerOfTwo) (hn : n ≤ m) : nextPowerOfTwo.go n power h₁ ≤ m := by
+    unfold nextPowerOfTwo.go
+    split
+    · rename_i hlt
+      apply go_le (power * 2) (Nat.mul_pos h₁ (by decide))
+        (isPowerOfTwo_mul_two_of_isPowerOfTwo h₂) _ hm hn
+      obtain ⟨k, rfl⟩ := h₂
+      obtain ⟨j, rfl⟩ := hm
+      rw [← Nat.pow_succ]
+      exact Nat.pow_le_pow_right (by decide)
+        ((Nat.pow_lt_pow_iff_right (by decide)).mp (Nat.lt_of_lt_of_le hlt hn))
+    · assumption
+  termination_by n - power
+  decreasing_by simp_wf; apply nextPowerOfTwo_dec <;> assumption
+
+theorem nextPowerOfTwo_eq_self {n : Nat} (h : n.isPowerOfTwo) : n.nextPowerOfTwo = n :=
+  Nat.le_antisymm (nextPowerOfTwo_le h (Nat.le_refl n)) (le_nextPowerOfTwo n)
+
+lemma nextPowerOfTwo_eq_two_pow_clog (n : ℕ) : n.nextPowerOfTwo = 2 ^ Nat.clog 2 n := by
+  have hle := nextPow2_nat_ge n
+  obtain ⟨k, hk⟩ := Nat.isPowerOfTwo_nextPowerOfTwo n
+  rw [hk]
+  simp_all only [Order.lt_two_iff, zero_le, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
+    pow_right_inj₀]
+  apply_fun Nat.clog 2 at hle using Nat.clog_monotone 2
+  have clogpow (k : ℕ) : Nat.clog 2 (2 ^ k) = k := by
+    simp_all only [Order.lt_two_iff, le_refl, Nat.clog_pow]
+  rw [clogpow] at hle
+  suffices k ≤ Nat.clog 2 n by linarith
+  have : n.nextPowerOfTwo ≤ 2 ^ Nat.clog 2 n :=
+    (nextPow2_nat_le n <| Nat.clog 2 n) <| Nat.le_pow_clog (by decide) n
+  rw [hk] at this
+  apply_fun Nat.clog 2 at this using Nat.clog_monotone 2
+  simpa [clogpow] using this
+
 end Nat
