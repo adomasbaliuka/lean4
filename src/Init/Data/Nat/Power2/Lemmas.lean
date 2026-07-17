@@ -101,21 +101,4 @@ where
 theorem nextPowerOfTwo_eq_self {n : Nat} (h : n.isPowerOfTwo) : n.nextPowerOfTwo = n :=
   Nat.le_antisymm (nextPowerOfTwo_le h (Nat.le_refl n)) (le_nextPowerOfTwo n)
 
-lemma nextPowerOfTwo_eq_two_pow_clog (n : ℕ) : n.nextPowerOfTwo = 2 ^ Nat.clog 2 n := by
-  have hle := nextPow2_nat_ge n
-  obtain ⟨k, hk⟩ := Nat.isPowerOfTwo_nextPowerOfTwo n
-  rw [hk]
-  simp_all only [Order.lt_two_iff, zero_le, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
-    pow_right_inj₀]
-  apply_fun Nat.clog 2 at hle using Nat.clog_monotone 2
-  have clogpow (k : ℕ) : Nat.clog 2 (2 ^ k) = k := by
-    simp_all only [Order.lt_two_iff, le_refl, Nat.clog_pow]
-  rw [clogpow] at hle
-  suffices k ≤ Nat.clog 2 n by linarith
-  have : n.nextPowerOfTwo ≤ 2 ^ Nat.clog 2 n :=
-    (nextPow2_nat_le n <| Nat.clog 2 n) <| Nat.le_pow_clog (by decide) n
-  rw [hk] at this
-  apply_fun Nat.clog 2 at this using Nat.clog_monotone 2
-  simpa [clogpow] using this
-
 end Nat
